@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Aleatório</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      body {
+        background-color: #f8f9fa;
+        font-family: Arial, sans-serif;
+      }
+      #chat {
+        margin-top: 20px;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      #messages {
+        height: 300px;
+        overflow-y: scroll;
+        border: 1px solid #dee2e6;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+      }
+      #input {
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        padding: 10px;
+        width: 100%;
+      }
+      #connect,
+      #disconnect {
+        width: 100%;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      #connect {
+        background-color: blueviolet;
+        color: #fff;
+        border: none;
+      }
+      #disconnect {
+        background-color: #dc3545;
+        color: #fff;
+        border: none;
+      }
+      #btnSubmit {
+        background-color: #3bdc35;
+        color: #fff;
+        border: none;
+        margin: 10px auto;
+        display: block;
+        width: 70%;
+        padding: 10px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="text-center">
+            <h2 class="mt-5">Chat Aleatório</h2>
+            <hr class="w-50 mx-auto" />
+          </div>
+          <div id="login">
+            <div class="form-group">
+              <label for="username">Nome:</label>
+              <input
+                type="text"
+                class="form-control"
+                id="username"
+                placeholder="Digite seu nome"
+              />
+            </div>
+            <button type="button" class="btn btn-success" id="connect">
+              Conectar
+            </button>
+          </div>
+
+          <div id="chat" style="display: none">
+            <div id="messages"></div>
+            <form id="form" action="">
+              <input
+                id="input"
+                autocomplete="off"
+                placeholder="Digite sua mensagem"
+              />
+              <button id="btnSubmit" type="submit">Enviar</button>
+            </form>
+            <button class="btn btn-danger mt-2" id="disconnect">
+              Desconectar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- JavaScript -->
+    <script>
+      const socket = io();
+      const chatDiv = document.getElementById("chat");
+      const connectButton = document.getElementById("connect");
+      const disconnectButton = document.getElementById("disconnect");
+      const usernameInput = document.getElementById("username");
+      const messageDiv = document.getElementById("messages");
+
+      connectButton.addEventListener("click", () => {
+        const username = usernameInput.value;
+        if (username) {
+          socket.emit("set username", username);
+          chatDiv.style.display = "block";
+        } else {
+          alert("Por favor, insira um nome");
+        }
+      });
+
+      document.getElementById("form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = document.getElementById("input");
+        if (input.value.trim()) {
+          socket.emit("chat message", input.value);
+          const messageElement = document.createElement("div");
+          messageElement.classList.add("message", "user");
+          messageElement.innerText = input.value;
+          messageDiv.appendChild(messageElement);
+          messageDiv.scrollTop = messageDiv.scrollHeight; // Rola para a última mensagem
+          input.value = "";
+        }
+      });
+
+      disconnectButton.addEventListener("click", () => {
+        socket.emit("manual disconnect");
+        chatDiv.style.display = "none";
+        messageDiv.innerHTML = ""; // Limpa as mensagens ao desconectar
+      });
+
+      socket.on("waiting", (msg) => {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message", "system");
+        messageElement.innerText = msg;
+        messageDiv.appendChild(messageElement);
+        messageDiv.scrollTop = messageDiv.scrollHeight;
+      });
+
+      socket.on("chat start", (msg) => {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message", "system");
+        messageElement.innerText = msg;
+        messageDiv.appendChild(messageElement);
+        messageDiv.scrollTop = messageDiv.scrollHeight;
+      });
+
+      socket.on("chat message", (msg) => {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message", "system"); // Pode ser alterado para 'user' se for de outro usuário
+        messageElement.textContent = msg;
+        messageDiv.appendChild(messageElement);
+        messageDiv.scrollTop = messageDiv.scrollHeight; // Rola automaticamente
+      });
+
+      socket.on("chat end", (msg) => {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message", "system");
+        messageElement.textContent = msg;
+        messageDiv.appendChild(messageElement);
+        messageDiv.scrollTop = messageDiv.scrollHeight;
+      });
+    </script>
+  </body>
+</html>
